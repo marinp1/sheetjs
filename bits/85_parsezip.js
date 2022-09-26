@@ -218,6 +218,19 @@ function parse_zip(zip/*:ZIP*/, opts/*:?ParseOpts*/)/*:Workbook*/ {
 		safe_parse_sheet(zip, path, relsPath, props.SheetNames[i], i, sheetRels, sheets, stype, opts, wb, themes, styles);
 	}
 
+	var tables = ({}/*:any*/);
+	if (opts.parseTables) {
+		dir.tables.forEach(table => {
+			var tabledata = getzipdata(zip, strip_front_slash(table), table);
+			tables[table] = parse_table(tabledata, strip_front_slash(table), opts);
+			// Find table sheet from relations
+			var tableSheetIndex = Object.keys(sheetRels).findIndex(sheetName => Object.keys(sheetRels[sheetName]).indexOf(tableXmlName) !== -1);
+			if (tableSheetIndex === -1) throw new Error('Failed to find sheet reference for table');
+			tables[table]['sheetName'] = Object.keys(sheetRels)[tableSheetIndex];
+		});
+		wb['Tables'] = Object.values(tables);
+	}
+
 	out = ({
 		Directory: dir,
 		Workbook: wb,

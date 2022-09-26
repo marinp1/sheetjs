@@ -126,8 +126,8 @@ var ct2type/*{[string]:string}*/ = ({
 	"application/vnd.ms-excel.wsSortMap": "TODO",
 
 	/* Table */
-	"application/vnd.ms-excel.table": "TODO",
-	"application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml": "TODO",
+	"application/vnd.ms-excel.table": "tables",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml": "tables",
 
 	/* Themes */
 	"application/vnd.openxmlformats-officedocument.theme+xml": "themes",

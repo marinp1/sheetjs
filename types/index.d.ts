@@ -94,44 +94,50 @@ export interface FullProperties extends Properties {
 }
 
 export interface CommonOptions {
-    /**
-     * If true, throw errors when features are not understood
-     * @default false
-     */
-    WTF?: boolean;
+  /**
+   * If true, throw errors when features are not understood
+   * @default false
+   */
+  WTF?: boolean;
 
-    /**
-     * When reading a file with VBA macros, expose CFB blob to `vbaraw` field
-     * When writing BIFF8/XLSB/XLSM, reseat `vbaraw` and export to file
-     * @default false
-     */
-    bookVBA?: boolean;
+  /**
+   * When reading a file with VBA macros, expose CFB blob to `vbaraw` field
+   * When writing BIFF8/XLSB/XLSM, reseat `vbaraw` and export to file
+   * @default false
+   */
+  bookVBA?: boolean;
 
-    /**
-     * When reading a file, store dates as type d (default is n)
-     * When writing XLSX/XLSM file, use native date (default uses date codes)
-     * @default false
-     */
-    cellDates?: boolean;
+  /**
+   * When reading a file, store dates as type d (default is n)
+   * When writing XLSX/XLSM file, use native date (default uses date codes)
+   * @default false
+   */
+  cellDates?: boolean;
 
-    /**
-     * Create cell objects for stub cells
-     * @default false
-     */
-    sheetStubs?: boolean;
+  /**
+   * Create cell objects for stub cells
+   * @default false
+   */
+  sheetStubs?: boolean;
 
-    /**
-     * When reading a file, save style/theme info to the .s field
-     * When writing a file, export style/theme info
-     * @default false
-     */
-    cellStyles?: boolean;
+  /**
+   * Try to parse tables
+   * @default false
+   */
+  parseTables?: boolean;
 
-    /**
-     * If defined and file is encrypted, use password
-     * @default ''
-     */
-    password?: string;
+  /**
+   * When reading a file, save style/theme info to the .s field
+   * When writing a file, export style/theme info
+   * @default false
+   */
+  cellStyles?: boolean;
+
+  /**
+   * If defined and file is encrypted, use password
+   * @default ''
+   */
+  password?: string;
 }
 
 export interface DateNFOption {
@@ -335,6 +341,20 @@ export interface DefinedName {
     Comment?: string;
 }
 
+export interface Table {
+    name: string;
+    displayName: string;
+    ref: string; // range in A1 notation
+    range: Range;
+    includesTotalRow: boolean;
+    sheetName: string;
+    columns: Array<{
+        id: string; // internal id
+        name: string; // name
+        columnIndex: number; // table column index
+    }>;
+}
+
 /** Workbook-Level Attributes */
 export interface WBProps {
     /** Sheet Properties */
@@ -342,6 +362,9 @@ export interface WBProps {
 
     /** Defined Names */
     Names?: DefinedName[];
+
+    /** Tables */
+    Tables?: Table[];
 
     /** Workbook Views */
     Views?: WBView[];
