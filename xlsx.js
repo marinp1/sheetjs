@@ -5284,6 +5284,7 @@ function new_ct() {
 		rels:[], strs:[], comments:[], threadedcomments:[], links:[],
 		coreprops:[], extprops:[], custprops:[], themes:[], styles:[],
 		calcchains:[], vba: [], drawings: [], metadata: [], people:[],
+		tables: [],
 		TODO:[], xmlns: "" });
 }
 
