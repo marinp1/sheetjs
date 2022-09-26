@@ -284,7 +284,62 @@ type EvertArrType = {[string]:Array<string>};
 type StringConv = {(string):string};
 
 */
-/* ssf.js (C) 2013-present SheetJS -- http://sheetjs.com */
+function parse_table(data, name, opts) {
+	if (name.slice(-4) === ".bin") throw new Error('Not implemented');
+	return parse_table_xml(data, opts);
+}
+
+var parse_table_xml = (function make_ptablex() {
+	return function parse_table_xml(data, opts) {
+	
+	var table = {};
+	var columns = [];
+
+	var expectedColumnCount = -1;
+
+	var str = debom(xlml_normalize(data));
+	(str.match(tagregex) || []).forEach(function (x) {
+		var y = parsexmltag(x);
+		switch (y[0]) {
+			case '<table': {
+				table.name = y['name'];
+				table.displayName = y['displayName'];
+				table.ref = y['ref'];
+				table.includesTotalRow = y['totalsRowCount'] === '1';
+				break;
+			}
+			case '<tableColumns': {
+				expectedColumnCount = Number(y['count']) || -1;
+				break;
+			}
+			case '<tableColumn': {
+				columns.push({
+					id: y['id'],
+					name: y['name'],
+				});
+				break;
+			}
+			default:
+				return;
+		}
+	});
+		
+	if (expectedColumnCount !== columns.length) {
+		throw new Error('Parsed column count does not match expected value');
+	}
+		
+	if (!table.ref) {
+		throw new Error('Failed to parse table');
+	}
+		
+    columns = columns.map((c, index) => Object.assign(c, {columnIndex: index}));
+		
+    return Object.assign(table, {
+        range: decode_range(table.ref),
+        columns,
+    });
+};
+})();/* ssf.js (C) 2013-present SheetJS -- http://sheetjs.com */
 /*jshint -W041 */
 function _strrev(x/*:string*/)/*:string*/ { var o = "", i = x.length-1; while(i>=0) o += x.charAt(i--); return o; }
 function pad0(v/*:any*/,d/*:number*/)/*:string*/{var t=""+v; return t.length>=d?t:fill('0',d-t.length)+t;}
@@ -5216,8 +5271,8 @@ var ct2type/*{[string]:string}*/ = ({
 	"application/vnd.ms-excel.wsSortMap": "TODO",
 
 	/* Table */
-	"application/vnd.ms-excel.table": "TODO",
-	"application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml": "TODO",
+	"application/vnd.ms-excel.table": "tables",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml": "tables",
 
 	/* Themes */
 	"application/vnd.openxmlformats-officedocument.theme+xml": "themes",
@@ -15543,7 +15598,10 @@ function write_ws_xml_cell(cell/*:Cell*/, ref, ws, opts/*::, idx, wb*/)/*:string
 		var ff = cell.F && cell.F.slice(0, ref.length) == ref ? {t:"array", ref:cell.F} : null;
 		v = writextag('f', escapexml(cell.f), ff) + (cell.v != null ? v : "");
 	}
-	if(cell.l) ws['!links'].push([ref, cell.l]);
+	if(cell.l) {
+		cell.l.display = escapexml(vv);
+		ws['!links'].push([ref, cell.l]);
+	}
 	if(cell.D) o.cm = 1;
 	return writextag('c', v, o);
 }
@@ -15853,6 +15911,7 @@ function write_ws_xml(idx/*:number*/, opts, wb/*:Workbook*/, rels)/*:string*/ {
 			}
 			if((relc = l[1].Target.indexOf("#")) > -1) rel.location = escapexml(l[1].Target.slice(relc+1));
 			if(l[1].Tooltip) rel.tooltip = escapexml(l[1].Tooltip);
+			rel.display = l[1].display;
 			o[o.length] = writextag("hyperlink",null,rel);
 		});
 		o[o.length] = "</hyperlinks>";
@@ -24880,6 +24939,19 @@ function parse_zip(zip/*:ZIP*/, opts/*:?ParseOpts*/)/*:Workbook*/ {
 			}
 		}
 		safe_parse_sheet(zip, path, relsPath, props.SheetNames[i], i, sheetRels, sheets, stype, opts, wb, themes, styles);
+	}
+
+	var tables = ({}/*:any*/);
+	if (opts.parseTables) {
+		dir.tables.forEach(table => {
+			var tabledata = getzipdata(zip, strip_front_slash(table), table);
+			tables[table] = parse_table(tabledata, strip_front_slash(table), opts);
+			// Find table sheet from relations
+			var tableSheetIndex = Object.keys(sheetRels).findIndex(sheetName => Object.keys(sheetRels[sheetName]).indexOf(tableXmlName) !== -1);
+			if (tableSheetIndex === -1) throw new Error('Failed to find sheet reference for table');
+			tables[table]['sheetName'] = Object.keys(sheetRels)[tableSheetIndex];
+		});
+		wb['Tables'] = Object.values(tables);
 	}
 
 	out = ({
